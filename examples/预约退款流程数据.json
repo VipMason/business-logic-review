@@ -1,0 +1,91 @@
+{
+  "title": "预约退款示例",
+  "subtitle": "用虚构业务展示用户申请、财务处理和支付回执查询",
+  "statusNote": "示例数据均为虚构，生产规则与回执时效未核实。",
+  "checks": {
+    "compositeState": false,
+    "asyncExternal": true,
+    "failureBranch": true,
+    "proseOnly": false,
+    "fullDocument": true
+  },
+  "views": [
+    {
+      "id": "request",
+      "title": "用户提交",
+      "columns": [
+        {
+          "title": "预约详情",
+          "lanes": [
+            {
+              "name": "用户",
+              "nodes": [
+                {
+                  "id": "S01",
+                  "title": "提交退款申请",
+                  "role": "用户",
+                  "place": "预约详情",
+                  "action": "选择原预约并提交申请。",
+                  "logic": "按原预约核对申请；财务可见时点待确认。",
+                  "result": "用户可查询申请。",
+                  "tone": "teal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "settlement",
+      "title": "财务处理",
+      "columns": [
+        {
+          "title": "核对申请",
+          "lanes": [
+            {
+              "name": "财务",
+              "nodes": [
+                {
+                  "id": "S02",
+                  "title": "核对并发起退款",
+                  "role": "财务",
+                  "place": "退款工作台",
+                  "action": "核对预约和交易后发起退款。",
+                  "logic": "等支付平台回执，回执决定后续处理。",
+                  "result": "成功结果在原订单查询。",
+                  "tone": "amber"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "异常分支",
+          "lanes": [
+            {
+              "name": "财务",
+              "nodes": [
+                {
+                  "id": "S02-1",
+                  "title": "处理退款失败",
+                  "role": "财务",
+                  "place": "退款详情",
+                  "action": "核对失败回执。",
+                  "logic": "是否能重试待确认。",
+                  "result": "保留原退款申请供核对。",
+                  "tone": "red"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "nextById": {
+    "S01": "财务到退款工作台处理 S02。",
+    "S02": "成功时用户回查原订单；失败时财务进入 S02-1。",
+    "S02-1": "财务确认回执并记录处理结果。"
+  }
+}

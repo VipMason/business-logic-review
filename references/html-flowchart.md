@@ -5,10 +5,10 @@ Deliver the HTML artifact as an offline, single-file **stage-and-lane interactiv
 ## Workflow
 
 1. Author a UTF-8 JSON file (pipe via `--input -` or use a temporary file if you only want the `.md` and `.html` deliverable pair inside `docs/业务梳理/`).
-2. Run the build script to inject the JSON into the template, set `<title>`, escape `<` / `>` / `&` safely, and automatically verify schema, offline purity, step-ID coverage, and step-title semantic alignment against Markdown headings:
+2. Run the build script from the installed skill directory, or pass its absolute path from the target project. The examples use Bash and a placeholder for the actual installed skill directory. The script injects the JSON, sets `<title>`, and verifies the offline template and Markdown alignment.
 
 ```bash
-python scripts/build_flowchart.py build \
+python "{skill-dir}/scripts/build_flowchart.py" build \
   --input path/to/flowchart.json \
   --output "{project-root}/docs/业务梳理/{topic}逻辑流程图.html" \
   --markdown "{project-root}/docs/业务梳理/{topic}业务梳理.md"
@@ -36,7 +36,8 @@ All business text must be in **Simplified Chinese**, retaining verified product 
     "compositeState": true,
     "asyncExternal": true,
     "failureBranch": true,
-    "proseOnly": false
+    "proseOnly": false,
+    "fullDocument": true
   },
   "views": [
     {
@@ -74,7 +75,8 @@ All business text must be in **Simplified Chinese**, retaining verified product 
 
 - `legend` is optional; omit it to use the default Chinese legend labels shown above.
 - `checks` is optional (or pass CLI flags `--has-composite-state`, `--has-async-handoff` / `--has-async-external`, `--has-failure-branch`, `--prose-only`): explicitly declaring booleans activates strict new-deliverable verification—every HTML node must have a matching Markdown step heading in order with **exact normalized title equality** (normalizing only whitespace, ASCII case, and full/half-width typography equivalents such as `（）` / `()` / `：` / `:` / `／` / `/`, while preserving all business words, parentheses, and suffixes; put role or surface qualifiers in step body or separate fields rather than one-sided heading qualifiers), `compositeState: true` or `asyncExternal: true` strictly requires `--markdown` with a real top-level `stateDiagram` / `stateDiagram-v2` or `sequenceDiagram` block (fenced examples and comments are ignored), `failureBranch: true` strictly requires at least one `red` node, and `proseOnly: true` disables Mermaid checks. Legacy deliverables without `checks` remain backward-compatible; undeclared keyword matches (after filtering negated phrases like "不涉及异步") emit only non-blocking `HINT:` messages.
-- Every stage `id` and every node `id` must be unique. Use stable IDs (`S01`, `S02`, ...) matching the Markdown deliverable.
+- Every stage `id` and every node `id` must be unique. Node IDs begin with letters followed by digits, and may have a letter or number suffix and numeric segments separated by hyphens or underscores (for example, `S01`, `S01a`, and `S02-1`). Use the exact IDs in Markdown step headings and name each destination separately in handoff text. ATX headings may bold the title, as in `### S01 **提交申请**`. Stage IDs have their own namespace and format.
+- For a complete project, declare `checks.fullDocument: true`. The verifier emits non-blocking reminders if the Markdown lacks **项目全业务串讲** or **口述回顾**. Narrow workflow documents can omit this flag.
 - `tone` must be one of `blue` (admin/system), `teal` (user/execution), `amber` (decision/branch), or `red` (failure/exception). Reserve `red` exclusively for concrete failure, rejection, timeout, unmatched, or divergence branches (e.g., 支付失效/退款、审方驳回、HIS 拒单); never color a normal happy-path or terminal step `red` merely because backend behavior is unverified (record unverified details in `logic` and `statusNote` instead).
 - Every node must represent a real business action, automated trigger, decision, or failure branch—never add synthetic meta-audit nodes (such as "分实体核验完成状态").
 - Every node `id` must have a non-empty entry in `nextById` (no missing or orphan keys). For terminal nodes, state who confirms completion or where the final outcome is observed.
@@ -92,7 +94,7 @@ All business text must be in **Simplified Chinese**, retaining verified product 
 
 ## Delivery checks
 
-- [ ] Run `python scripts/build_flowchart.py verify --html "<html-path>" --markdown "<md-path>" --strict-warnings` for full deliverable pairs and confirm exit code `0`. Declare `checks` in JSON (or pass `--has-composite-state` / `--has-async-handoff` / `--has-async-external` / `--has-failure-branch` / `--prose-only`) so exact diagram types and failure nodes are verified deterministically:
+- [ ] Run `python "{skill-dir}/scripts/build_flowchart.py" verify --html "<html-path>" --markdown "<md-path>" --strict-warnings` for full deliverable pairs and confirm exit code `0`. Declare `checks` in JSON (or pass `--has-composite-state` / `--has-async-handoff` / `--has-async-external` / `--has-failure-branch` / `--prose-only`) so exact diagram types and failure nodes are verified deterministically:
   - `ERROR` (always exit `1`): schema/offline/broken-ref errors, declared `checks` contract violations (`stateDiagram`/`sequenceDiagram`/`red` node), and bidirectional Markdown alignment errors (missing IDs in Markdown or HTML, duplicate step headings, out-of-order step IDs, step title conflicts).
   - `WARN` (exit `1` under `--strict-warnings`): deterministic structural/format defects only (duplicate same-column lane names, unquoted Mermaid bracket parentheses, spoken recap > 100 CJK chars).
   - `HINT` (never blocks `--strict-warnings`): heuristic layout/title/glob advisories and undeclared business-condition hints.

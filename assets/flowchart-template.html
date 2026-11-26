@@ -29,7 +29,8 @@ button{font:inherit}
 .canvas-title span{color:#6f838e;font-size:11px}
 .stage-nav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
 .stage-pill{border:1px solid #d1dde2;border-radius:99px;background:#f4f8f9;color:#355262;padding:4px 10px;font-size:11px;cursor:pointer}
-.stage-pill:hover{border-color:var(--green);color:var(--green);background:#ebf6f4}
+.stage-pill:not(:disabled):hover{border-color:var(--green);color:var(--green);background:#ebf6f4}
+.stage-pill:disabled{opacity:.45;cursor:default}
 .empty-state{padding:28px 16px;text-align:center;color:var(--muted);font-size:13px;border:1px dashed var(--line);border-radius:8px;background:#fafcfd}
 .flow{display:flex;align-items:flex-start;gap:28px;min-width:max-content;padding:4px 5px 20px}
 .column{position:relative;width:240px;flex:0 0 240px}
@@ -288,7 +289,7 @@ footer{margin-top:9px;color:#7b8c95;font-size:11px}
     });
 
     nodeIndex.forEach((entry, id) => {
-      const matches = entry.nextText.match(/[A-Za-z][A-Za-z0-9_-]*/g) || [];
+      const matches = entry.nextText.match(/(?<![A-Za-z0-9_-])[A-Za-z]+[0-9]+[A-Za-z0-9]*(?:[-_][0-9]+[A-Za-z0-9]*)*(?![A-Za-z0-9_-])/g) || [];
       const seen = new Set();
       matches.forEach(token => {
         if (token !== id && !seen.has(token) && nodeIndex.has(token)) {
@@ -366,6 +367,7 @@ footer{margin-top:9px;color:#7b8c95;font-size:11px}
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "stage-pill";
+      btn.dataset.stageId = view.id;
       btn.textContent = view.title;
       btn.addEventListener("click", () => {
         const target = document.getElementById(view.id);
@@ -617,6 +619,9 @@ footer{margin-top:9px;color:#7b8c95;font-size:11px}
     });
 
     const visibleCount = document.querySelectorAll(".node:not([hidden])").length;
+    document.querySelectorAll("#stageNav .stage-pill").forEach(button => {
+      button.disabled = document.getElementById(button.dataset.stageId).hidden;
+    });
     document.getElementById("emptyState").hidden = visibleCount > 0;
     document.getElementById("count").textContent = (q || activeTone)
       ? "显示 " + visibleCount + " / " + totalNodes + " 个节点"

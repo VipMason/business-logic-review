@@ -2,16 +2,20 @@
 
 Produce the Markdown deliverable named in [SKILL.md](../SKILL.md). Write in Simplified Chinese for engineers, testers, product staff, and presenters. Cover the in-scope flow and relevant branches. Preserve verified menu names, and label unverified ones in Chinese.
 
-## 1. Scope, roles, and entities
+Use these Chinese section names for complete Markdown deliverables. The numbered prefixes shown here are optional. For a complete project, set `checks.fullDocument: true` in the paired flowchart data to enable reminders about the narrative and recap headings.
+
+## 1. 范围、角色与核心对象
 
 Specify start, end, surfaces, evidence scope, and environment or version. List role responsibilities, visible data, allowed operations, and handoff points. Identify entity ownership, linkage, cardinality, and creation point as relevant.
+
+For a complete project review, add **项目端构成** in this section before the role table. State the evidence-supported frontend count and how it was determined. Use a table for application name, platform, audience, entry point, source directory or repository, and build/deployment evidence. Describe shared build targets, embedded pages, and external H5 links as applicable. Record independently evidenced deployments and unresolved activation separately from repository structure. Identify supporting APIs, adapters, and external services below the table.
 
 When the system uses overloaded or easily confused terms/records across surfaces (e.g., 患者 vs 就诊人, 问诊单 vs 业务订单 vs 支付交易, 处方审核 vs 药房审核), add a concise **核心术语与单据辨析表** using this header:
 
 | 业务术语 | 准确定义 | 代码 / 库表对应标识 | 易混淆概念 |
 |---|---|---|---|
 
-## 2. Numbered end-to-end flow
+## 2. 端到端主流程与分支
 
 ### Required narrative before the numbered steps
 
@@ -21,7 +25,7 @@ Write connected Chinese prose that a new reader can follow or read aloud. Start 
 
 Use verified business terms and visible actions. Keep step codes, field names, status integers, and detailed evidence in the sections that follow. Mention uncertainty where it affects the business, and distinguish a recorded source action from a verified receiving-side result. A supplied style example guides the narration only; derive business claims from this project's evidence. Before delivery, ensure that reading the narrative alone explains the role of each surface, how the business areas relate, and which links and production behaviors are still unverified. The short spoken recap remains at the end.
 
-Follow actual business order and use stable step identifiers (`S01`, `S02`, ...) in headings or step labels (`### S01 标题` or `**S01 标题**`) so they match the HTML deliverable (`build_flowchart.py verify --markdown` checks step-ID coverage, order, and titles—and when `checks` is declared on new deliverables, enforces a unique matching-order heading with exact normalized title equality to HTML `node.title`; place role/surface notes or parenthetical business qualifiers consistently in both files, or keep role notes in the step body/separate metadata fields rather than one-sided heading suffixes). Place parallel paths and exceptions where they arise. For each step, record:
+Follow actual business order. Use the same step IDs and titles as the flowchart, in a heading such as `### S01 标题` or a label such as `**S01 标题**`. Put role and surface notes in the step body. See the [flowchart specification](html-flowchart.md#json-data-contract) for ID and title validation. Place parallel paths and exceptions where they arise. For each step, record:
 
 1. Actor, surface, menu, and action. For automation, identify the trigger.
 2. Preconditions, decisions, and actions.
@@ -31,21 +35,21 @@ Follow actual business order and use stable step identifiers (`S01`, `S02`, ...)
 
 Consider default values that do not inherit targets, fallback behavior that conflicts with deployment settings, unmatched results retained on one surface, and status labels that do not establish real synchronization. Include applicable risks only.
 
-Do not simply paste terse HTML card copy into Markdown: expand before/after states, entry points, and handoff timing. When the workflow involves composite/multi-entity states or async/external-system handoffs (such as payment callbacks, HIS sync, or T+1 reporting), include **1–2 targeted Mermaid diagrams** (`stateDiagram-v2` and/or `sequenceDiagram`, per [modeling.md](modeling.md)) unless the user explicitly requested prose only. Declare matching `checks` flags (`compositeState`, `asyncExternal`, `failureBranch`, `proseOnly`) in the flowchart JSON (or pass CLI flags) so `build_flowchart.py verify` enforces exact diagram types and prose-only exceptions deterministically.
+In Markdown, expand the HTML cards with before-and-after states, entry points, and handoff timing. Include **1–2 targeted Mermaid diagrams** for composite states or async/external-system handoffs unless the user asks for prose only. See the [modeling guide](modeling.md) for diagram selection and the [flowchart specification](html-flowchart.md#json-data-contract) for the matching `checks` flags.
 
 State workspace/repository boundaries once in §1 and use concise inline tags (`未核实（仅代码静态分析）`) instead of repeating generic "backend code is absent" disclaimers on every step; prioritize concrete code facts (exact status codes, priority rules, validation thresholds, guard messages) over generic caveats. Cite exact `path:line` locators in the evidence index or inline citations for material rules, status conditions, and guards rather than broad wildcard globs (e.g., `pagesA/*`).
 
 For evidence inside the project, use a Markdown link resolved relative to the document, such as `[订单状态校验（第 42 行）](../../src/order.js#L42)` when the viewer supports that line anchor. Otherwise link to the file and put the verified line or section in the label. When an HTML node cites only an evidence ID, use that same ID in the Markdown evidence index so readers can open its source there.
 
-## 3. Rules and metric definitions
+## 3. 规则与统计口径
 
 Use the decision, metric, and evidence comparison tables in [checklists.md](checklists.md). Describe triggers, conditions, precedence, success, failures, and fallbacks. For statistics record the population, numerator, denominator, dates, filters, and deduplication. Include a qualifying case and a similar excluded case.
 
-## 4. Adjacent modules
+## 4. 相关模块与业务边界
 
 Explain each relevant non-core module, its entry or handoff, whether it is required, how it relates to the main state, and which downstream effects it does not trigger.
 
-## 5. Open questions
+## 5. 待确认问题
 
 Use the following standardized Simplified Chinese table header verbatim in the deliverable:
 
@@ -54,6 +58,8 @@ Use the following standardized Simplified Chinese table header verbatim in the d
 
 Reuse inline step IDs (`S01`, `S02`, ...). Keep conflicting evidence separate. Remove answered questions. State the reviewed scope if none remain.
 
-## 6. Spoken recap
+## 6. 口述回顾
 
-Close with one Chinese paragraph of no more than 100 Chinese characters, covering the start, key handoffs, and outcome.
+Use the exact heading **口述回顾** (with an optional section number). Close with one Chinese paragraph of no more than 100 Chinese characters, covering the start, key handoffs, and outcome.
+
+See the [minimal paired example](../examples/预约退款业务梳理.md) and its [flowchart data](../examples/预约退款流程数据.json).

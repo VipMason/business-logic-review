@@ -15,7 +15,7 @@ from typing import Any
 
 ALLOWED_TONES = {"blue", "teal", "amber", "red"}
 ALLOWED_LEGEND_KEYS = {"blue", "teal", "amber", "red"}
-ALLOWED_CHECK_KEYS = {"compositeState", "asyncExternal", "failureBranch", "proseOnly"}
+ALLOWED_CHECK_KEYS = {"compositeState", "asyncExternal", "failureBranch", "proseOnly", "fullDocument"}
 REQUIRED_NODE_FIELDS = ("id", "title", "role", "place", "action", "logic", "result", "tone")
 PLACEHOLDER_RE = re.compile(r"\{\{[A-Z0-9_]+\}\}")
 DATA_SCRIPT_RE = re.compile(
@@ -23,8 +23,9 @@ DATA_SCRIPT_RE = re.compile(
     re.DOTALL,
 )
 TITLE_RE = re.compile(r"<title>.*?</title>", re.DOTALL)
-STEP_PREFIX_RE = re.compile(r"^([A-Za-z]+)\d+$")
-STEP_TOKEN_RE = re.compile(r"(?<![A-Za-z0-9_])([A-Za-z]+\d+)(?![A-Za-z0-9_])")
+STEP_SUFFIX = r"[0-9]+[A-Za-z0-9]*(?:[-_][0-9]+[A-Za-z0-9]*)*"
+STEP_PREFIX_RE = re.compile(rf"([A-Za-z]+){STEP_SUFFIX}\Z")
+STEP_TOKEN_RE = re.compile(rf"(?<![A-Za-z0-9_-])([A-Za-z]+{STEP_SUFFIX})(?![A-Za-z0-9_-])")
 META_AUDIT_RE = re.compile(r"(?:分实体核验|核验完成状态|确认闭环|逐项核验)")
 FAILURE_CUE_RE = re.compile(r"(?:异常|失败|驳回|拒绝|超时|失效|退款|冲突|阻断|挂账|未匹配|未回执|退回)")
 ASYNC_EXTERNAL_RE = re.compile(r"(?:异步|回调|T\+1|定时任务|消息队列|MQ|webhook|HIS|支付网关|第三方回执)", re.IGNORECASE)
@@ -32,13 +33,13 @@ COMPOSITE_STATE_RE = re.compile(r"(?:状态机|状态流转|复合状态|status\
 NEGATED_CLAUSE_RE = re.compile(r"(?:不涉及|不包含|未涉及|无需|不走|并非|没有|非)[^。；;！!\n，,]{0,40}")
 WILDCARD_GLOB_RE = re.compile(r"`[^`\s]*/\*`")
 EXACT_LINE_LOC_RE = re.compile(r"\.[A-Za-z0-9]{1,6}:\d+")
-MERMAID_BLOCK_RE = re.compile(r"```mermaid\s*\n(.*?)```", re.DOTALL | re.IGNORECASE)
-MERMAID_STATE_RE = re.compile(r"(?im)^\s*stateDiagram(?:-v2)?\b")
-MERMAID_SEQ_RE = re.compile(r"(?im)^\s*sequenceDiagram\b")
 MERMAID_UNQUOTED_PAREN_RE = re.compile(r'\[(?!")[^\]\n]*[()（）][^\]\n]*\]')
-RECAP_HEADING_RE = re.compile(r"^#{1,6}\s+.*(?:口述回顾|口头复述).*$", re.MULTILINE)
+RECAP_HEADING_RE = re.compile(r"(?m)^#{1,6}[ \t]+(?:[0-9]+[.、][ \t]*)?(?:口述回顾|口头复述)(?:[ \t]+#+)?[ \t]*$")
 CJK_RE = re.compile(r"[\u4e00-\u9fff]")
-MD_STEP_HEADING_RE = re.compile(r"(?m)^(?:#{1,6}\s+|\*\*)(?P<id>[A-Za-z]+\d+)(?:[\s:：.、\-]+)(?P<title>[^*\r\n]+)")
+MD_STEP_HEADING_RE = re.compile(
+    rf"(?m)^[ ]{{0,3}}(?P<marker>#{{1,6}}[ \t]+|\*\*)(?P<id>[A-Za-z]+{STEP_SUFFIX})"
+    r"(?:[ \t:：.、\-]+)(?P<title>[^\r\n]+)"
+)
 STOP_CJK_CHARS = set("的与和或及在并了为按对")
 
 
@@ -283,7 +284,9 @@ def validate_data(data: Any) -> tuple[list[str], dict[str, int]]:
 
                     nid = node.get("id")
                     if isinstance(nid, str) and nid.strip():
-                        if nid in seen_node_ids:
+                        if not STEP_PREFIX_RE.fullmatch(nid):
+                            errors.append(f"{n_loc}.id must be a step ID such as S01, S01a, or S02-1.")
+                        elif nid in seen_node_ids:
                             errors.append(f"Duplicate node id: '{nid}'.")
                         else:
                             seen_node_ids.add(nid)
@@ -351,6 +354,7 @@ def _resolve_checks(
         "asyncExternal": True if has_async_handoff else raw_checks.get("asyncExternal"),
         "failureBranch": True if has_failure_branch else raw_checks.get("failureBranch"),
         "proseOnly": True if prose_only else raw_checks.get("proseOnly"),
+        "fullDocument": raw_checks.get("fullDocument"),
     }
 
 
@@ -440,7 +444,7 @@ def collect_layout_checks(
         referenced: set[str] = set()
         id_set = set(node_ids)
         for src_id, handoff in next_by_id.items():
-            for tok in re.findall(r"[A-Za-z][A-Za-z0-9_-]*", str(handoff)):
+            for tok in STEP_TOKEN_RE.findall(str(handoff)):
                 if tok != src_id and tok in id_set:
                     referenced.add(tok)
         unlinked = [nid for nid in node_ids if nid not in stage_first_nodes and nid not in referenced]
@@ -501,6 +505,11 @@ def collect_markdown_checks(
         )
 
     recap_match = RECAP_HEADING_RE.search(outside_md)
+    if resolved_checks.get("fullDocument"):
+        if not re.search(r"(?m)^#{1,6}[ \t]+项目全业务串讲(?:[ \t]+#+)?[ \t]*$", outside_md):
+            hints.append("Complete project Markdown should include the heading '项目全业务串讲'.")
+        if not re.search(r"(?m)^#{1,6}[ \t]+(?:[0-9]+[.、][ \t]*)?口述回顾(?:[ \t]+#+)?[ \t]*$", outside_md):
+            hints.append("Complete project Markdown should include the heading '口述回顾'.")
     if recap_match:
         tail = outside_md[recap_match.end():].lstrip("\r\n")
         para_lines: list[str] = []
@@ -541,17 +550,21 @@ def verify_html_file(
     if placeholders:
         errors.append(f"Unreplaced template placeholders in HTML: {placeholders}")
 
+    data_blocks = list(DATA_SCRIPT_RE.finditer(content))
+    if len(data_blocks) != 1:
+        errors.append('Expected exactly one <script id="flowchart-data" type="application/json"> data block.')
+        raise ValueError("\n".join(f"- {err}" for err in errors))
+    match = data_blocks[0]
+    raw_data = match.group(2)
+    if "<" in raw_data:
+        errors.append(r"Unescaped '<' in #flowchart-data. Use \u003c for literal '<' in JSON.")
+    shell = content[:match.start(2)] + content[match.end(2):]
     for label, pattern in EXTERNAL_DEPENDENCY_PATTERNS:
-        if pattern.search(content):
+        if pattern.search(shell):
             errors.append(f"Disallowed offline dependency detected: {label}")
 
-    match = DATA_SCRIPT_RE.search(content)
-    if not match:
-        errors.append('Missing <script id="flowchart-data" type="application/json"> data block.')
-        raise ValueError("\n".join(f"- {err}" for err in errors))
-
     try:
-        data = json.loads(match.group(2))
+        data = json.loads(raw_data)
     except json.JSONDecodeError as exc:
         errors.append(f"Invalid JSON in #flowchart-data: {exc}")
         raise ValueError("\n".join(f"- {err}" for err in errors)) from exc
@@ -590,6 +603,8 @@ def verify_html_file(
                 "Declared checks.compositeState/asyncExternal=true requires --markdown to verify required "
                 "Mermaid diagram type(s) (or set checks.proseOnly=true / --prose-only)."
             )
+    if markdown_path is None and resolved.get("fullDocument"):
+        md_hints.append("Pass --markdown to check the complete project document headings.")
 
     if markdown_path is not None and node_ids:
         md_text = markdown_path.read_text(encoding="utf-8")
@@ -628,7 +643,13 @@ def verify_html_file(
             if hid in md_titles:
                 dup_md_ids.add(hid)
             else:
-                md_titles[hid] = hm.group("title")
+                title = hm.group("title")
+                if hm.group("marker") == "**":
+                    title = title.split("**", 1)[0]
+                else:
+                    title = re.sub(r"[ \t]+#+[ \t]*$", "", title)
+                    title = re.sub(r"\*\*([^*\r\n]+)\*\*", r"\1", title)
+                md_titles[hid] = title
                 md_unique_order.append(hid)
 
         if dup_md_ids:
@@ -874,6 +895,49 @@ def cmd_selftest(args: argparse.Namespace) -> int:
         assert r"\u003c/script\u003e" in html_out.read_text(encoding="utf-8")
         _, _, _, w, h = verify_html_file(html_out, md_out)
         assert not w and not h, f"Expected zero warnings/hints, got w={w}, h={h}"
+
+        example_dir = Path(__file__).resolve().parents[1] / "examples"
+        example_md = example_dir / "预约退款业务梳理.md"
+        example = json.loads((example_dir / "预约退款流程数据.json").read_text(encoding="utf-8"))
+        example["views"][0]["columns"][0]["lanes"][0]["nodes"][0]["logic"] += (
+            " 文档示例提及 fetch()、XMLHttpRequest、@import url(https://example.com/style.css)。"
+        )
+        example_html = tmp_dir / "paired-example.html"
+        rendered_example = build_html_from_data(example, tpl_text)
+        example_html.write_text(rendered_example, encoding="utf-8")
+        _, example_ids, _, example_w, example_h = verify_html_file(example_html, example_md)
+        assert example_ids == ["S01", "S02", "S02-1"] and not example_w and not example_h
+
+        bad_substep = copy.deepcopy(example)
+        bad_substep["nextById"]["S02"] = "去 S02-9。"
+        try:
+            validate_data(bad_substep)
+            raise AssertionError("Expected an absent substep to be rejected")
+        except ValueError as exc:
+            assert "Broken step reference 'S02-9'" in str(exc)
+
+        no_headings_md = tmp_dir / "no-business-headings.md"
+        no_headings_md.write_text(
+            example_md.read_text(encoding="utf-8").replace("### 项目全业务串讲", "### 串讲").replace(
+                "## 6. 口述回顾", "## 6. 摘要"
+            ),
+            encoding="utf-8",
+        )
+        _, _, _, missing_w, missing_h = verify_html_file(example_html, no_headings_md)
+        assert not missing_w and len(missing_h) == 2 and all(
+            any(name in hint for hint in missing_h) for name in ("项目全业务串讲", "口述回顾")
+        )
+
+        bad_shell = tmp_dir / "bad-shell.html"
+        bad_shell.write_text(
+            rendered_example.replace("</head>", "<script>fetch('/example');</script></head>"),
+            encoding="utf-8",
+        )
+        try:
+            verify_html_file(bad_shell, example_md)
+            raise AssertionError("Expected a runtime fetch in the template shell to be rejected")
+        except ValueError as exc:
+            assert "runtime fetch()" in str(exc)
 
         # 1. Negation false-positive regression: "不涉及 HIS 或异步回调，也不涉及状态机" -> 0 warnings, 0 hints
         neg_md = tmp_dir / "negated.md"

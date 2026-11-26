@@ -41,4 +41,5 @@ python scripts/build_flowchart.py verify --html flow.html --markdown review.md -
 
 ## 版本记录
 
+- **v0.1.1** · 启动部署说明新增当前环境就绪判定、首个阻塞点和从基础服务到前端的联通验收。
 - **v0.1.0** · 新增项目端构成核对及各端启动部署文档，同步完整业务串讲模板、离线流程图校验和示例。

@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#102b3f">
+<title>示例业务流程 - 逻辑流程图</title>
+<style>
+:root{--navy:#102b3f;--ink:#203746;--muted:#627987;--line:#d5e0e5;--bg:#f2f6f7;--blue:#e8f1f8;--teal:#e1f2ef;--amber:#fff2da;--red:#fae9e7;--green:#087c74}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 "Microsoft YaHei UI","PingFang SC",sans-serif}
+header{height:54px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;background:var(--navy);color:#e4edf1}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700}
+.mark{width:26px;height:26px;display:grid;place-items:center;border:1px solid #85a2b0;border-radius:7px;color:#83dece;font-size:13px}
+header .hint{color:#a9bdc7;font-size:12px}
+main{padding:16px 20px 22px}
+.heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:11px}
+h1{margin:0;color:var(--navy);font-size:21px;letter-spacing:-.02em}
+.sub{margin:2px 0 0;color:var(--muted);font-size:12px}
+.actions{display:flex;gap:8px;align-items:center}
+input{width:min(320px,34vw);padding:9px 11px;border:1px solid #c8d6dd;border-radius:7px;background:white;font:inherit;font-size:12px;color:var(--ink)}
+button{font:inherit}
+.action{border:1px solid #c6d4db;border-radius:7px;background:white;padding:8px 11px;color:#3d5b6c;cursor:pointer;font-size:12px;white-space:nowrap}
+.action:hover{border-color:var(--green);color:var(--green)}
+.workspace{display:grid;grid-template-columns:minmax(0,1fr) 335px;gap:12px;align-items:stretch}
+.canvas{min-width:0;min-height:calc(100vh - 155px);padding:16px;overflow:auto;border:1px solid var(--line);border-radius:9px;background:#fff}
+.canvas-title{display:flex;justify-content:space-between;align-items:center;margin:0 0 11px;padding-bottom:9px;border-bottom:1px solid #e6ecef}
+.canvas-title strong{color:var(--navy);font-size:13px}
+.canvas-title span{color:#6f838e;font-size:11px}
+.stage-nav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.stage-pill{border:1px solid #d1dde2;border-radius:99px;background:#f4f8f9;color:#355262;padding:4px 10px;font-size:11px;cursor:pointer}
+.stage-pill:hover{border-color:var(--green);color:var(--green);background:#ebf6f4}
+.empty-state{padding:28px 16px;text-align:center;color:var(--muted);font-size:13px;border:1px dashed var(--line);border-radius:8px;background:#fafcfd}
+.flow{display:flex;align-items:flex-start;gap:28px;min-width:max-content;padding:4px 5px 20px}
+.column{position:relative;width:240px;flex:0 0 240px}
+.column.has-next-col::after{content:"";position:absolute;z-index:1;right:-22px;top:32px;width:15px;height:8px;border-top:2px solid #8ba1ad}
+.column.has-next-col::before{content:"";position:absolute;z-index:2;right:-22px;top:27px;border:5px solid transparent;border-left-color:#8ba1ad;transform:translateX(8px)}
+.col-title{min-height:35px;margin-bottom:9px;color:#537181;font-size:11px;font-weight:700;letter-spacing:.02em}
+.lane{margin-bottom:12px;padding:8px;border:1px solid #e1e9ec;border-radius:8px;background:#f8fafb}
+.lane-name{margin:0 0 7px;color:#748995;font-size:10px;font-weight:600}
+.stack{display:flex;flex-direction:column;align-items:stretch}
+.node{position:relative;width:100%;padding:10px 11px;border:1px solid #9eb9ca;border-radius:7px;background:var(--blue);color:#1d435b;text-align:left;cursor:pointer;transition:border-color .12s,box-shadow .12s,transform .12s}
+.node.has-prev{margin-top:22px}
+.node.has-prev::before{content:"↓";position:absolute;left:50%;top:-19px;transform:translateX(-50%);color:#8ba1ad;font-size:13px;line-height:1;pointer-events:none}
+.node:hover{transform:translateY(-1px);border-color:#4b87ad;box-shadow:0 4px 12px #183b4b16}
+.node[aria-pressed=true]{outline:2px solid #087c74;outline-offset:1px;border-color:#087c74}
+.node.is-upstream{box-shadow:0 0 0 2px #4c7ea0;border-color:#2b6388}
+.node.is-downstream{box-shadow:0 0 0 2px #0ea59a;border-color:#087c74}
+.node.blue{background:var(--blue);border-color:#9eb9ca;color:#1d435b}
+.node.teal{background:var(--teal);border-color:#96c9c1;color:#245b54}
+.node.amber{background:var(--amber);border-color:#ddbd7f;color:#684d1d}
+.node.red{background:var(--red);border-color:#dba3a0;color:#703b37}
+.node-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px}
+.node-id{display:inline-block;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,.76);border:1px solid rgba(16,43,63,.12);font-size:10px;font-weight:700;letter-spacing:.03em;color:inherit}
+.node-title{display:block;font-size:12px;font-weight:700;line-height:1.45}
+.node-meta{display:block;margin-top:4px;color:#5e7481;font-size:10px}
+.node-routes{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.route-pill{display:inline-block;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,.7);border:1px solid rgba(16,43,63,.14);font-size:10px;color:#325163}
+.route-pill.route-red{background:#fff4f3;border-color:#dfb0ad;color:#8e342f}
+.route-pill.route-loop{background:#fffaf0;border-color:#dfc48f;color:#7a561a}
+.detail{position:sticky;top:12px;height:calc(100vh - 155px);min-height:500px;overflow:auto;border:1px solid var(--line);border-radius:9px;background:white}
+.detail-head{padding:16px 17px 14px;background:var(--navy);color:white}
+.detail-head small{display:block;color:#9eb5c1;font-size:11px;line-height:1.4}
+.detail-head h2{margin:6px 0 0;font-size:17px;line-height:1.35}
+.detail-body{padding:14px 17px}
+.detail-placeholder{padding:22px 2px;color:#718590;font-size:13px}
+.field{padding:10px 0;border-bottom:1px solid #e9eef0}
+.field:last-child{border:0}
+.field b{display:block;margin-bottom:4px;color:#087c74;font-size:11px;letter-spacing:.03em}
+.field p{margin:0;color:#405a69;font-size:12px;white-space:pre-line}
+.jump-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.jump-btn{border:1px solid #b8d3ce;border-radius:99px;background:#eff8f6;color:#0b5e58;padding:3px 9px;font-size:11px;cursor:pointer;text-align:left}
+.jump-btn:hover{background:#dff2ee;border-color:#087c74}
+.jump-btn.is-up{border-color:#bfd2e0;background:#f0f6fa;color:#214b68}
+.jump-btn.is-up:hover{background:#e1edf6;border-color:#3b759c}
+.status{margin:10px 0 0;padding:10px 12px;border-left:3px solid #cf9c44;background:#fff7e9;color:#6d5527;font-size:12px;white-space:pre-line}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.legend-btn{display:inline-flex;align-items:center;border:1px solid #dce5e9;border-radius:99px;background:#f8fbfc;padding:4px 10px;color:#516773;font-size:11px;cursor:pointer}
+.legend-btn:hover{border-color:#8eb0be;color:var(--navy)}
+.legend-btn[aria-pressed=true]{border-color:var(--navy);background:var(--navy);color:#fff}
+.legend-btn i{display:inline-block;width:10px;height:10px;margin-right:6px;border:1px solid #9eb9ca;border-radius:3px;background:var(--blue)}
+.legend-btn .k-teal{background:var(--teal);border-color:#96c9c1}
+.legend-btn .k-amber{background:var(--amber);border-color:#ddbd7f}
+.legend-btn .k-red{background:var(--red);border-color:#dba3a0}
+.view{margin:0 0 24px;padding:0 0 22px;border-bottom:1px solid #e1e9ec}
+.view:last-child{margin-bottom:0;padding-bottom:0;border-bottom:0}
+.view-heading{margin:0 0 10px;color:var(--navy);font-size:15px}
+.print-details{display:none}
+footer{margin-top:9px;color:#7b8c95;font-size:11px}
+@media(max-width:930px){.workspace{grid-template-columns:1fr}.detail{position:relative;top:auto;height:auto;min-height:260px}.canvas{min-height:420px}}
+@media(max-width:620px){header{padding:0 12px}.hint{display:none}main{padding:12px 9px}.heading{align-items:flex-start;flex-direction:column}.actions{width:100%}input{width:100%}.canvas{padding:11px}.detail{min-height:240px}}
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{background:#fff;font-size:12px}
+  header,.actions,.detail,.stage-nav{display:none!important}
+  main{padding:0}
+  .workspace{display:block}
+  .canvas{overflow:visible;min-height:0;border:0;padding:0}
+  .flow{min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .column{width:auto}
+  .column.has-next-col::before,.column.has-next-col::after{display:none}
+  .node{break-inside:avoid}
+  .legend-btn{border-color:#cfdce2;background:#fff;color:#405a69}
+  .print-details{display:block;margin-top:18px}
+  .print-stage{margin-top:14px;break-inside:avoid-page}
+  .print-stage h3{margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line);color:var(--navy);font-size:14px}
+  .print-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px}
+  .print-table th,.print-table td{border:1px solid #cfdce2;padding:6px 7px;text-align:left;vertical-align:top}
+  .print-table th{background:#eef4f6;color:var(--navy);font-weight:700}
+  .print-table tr{break-inside:avoid}
+  .status{margin-top:12px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="mark">流</span><span>业务逻辑梳理</span></div>
+  <span class="hint">点击节点联动上下游 · 支持图例筛选、全文搜索与打印导出</span>
+</header>
+<main>
+  <div class="heading">
+    <div><h1 id="pageTitle"></h1><p class="sub" id="pageSub"></p></div>
+    <div class="actions">
+      <input id="search" type="search" placeholder="搜索编号、名称、角色、页面、规则或结果..." aria-label="搜索流程节点">
+      <button class="action" type="button" id="printBtn">打印 / 导出 PDF</button>
+    </div>
+  </div>
+  <div class="workspace">
+    <section class="canvas">
+      <div class="canvas-title"><strong>业务流程视图</strong><span id="count"></span></div>
+      <nav id="stageNav" class="stage-nav" aria-label="阶段快速跳转" hidden></nav>
+      <div id="views"></div>
+      <div id="emptyState" class="empty-state" hidden>没有匹配的流程节点，请调整关键词或图例筛选。</div>
+      <div class="legend" role="group" aria-label="按节点类型筛选">
+        <button type="button" class="legend-btn" data-tone="blue" aria-pressed="false"><i></i><span id="legendBlue"></span></button>
+        <button type="button" class="legend-btn" data-tone="teal" aria-pressed="false"><i class="k-teal"></i><span id="legendTeal"></span></button>
+        <button type="button" class="legend-btn" data-tone="amber" aria-pressed="false"><i class="k-amber"></i><span id="legendAmber"></span></button>
+        <button type="button" class="legend-btn" data-tone="red" aria-pressed="false"><i class="k-red"></i><span id="legendRed"></span></button>
+      </div>
+    </section>
+    <aside class="detail" aria-live="polite">
+      <div class="detail-head"><small id="dRole">节点详情</small><h2 id="dTitle">请选择左侧流程节点</h2></div>
+      <div class="detail-body" id="dBody"><div class="detail-placeholder">点击任意节点查看操作动作、判断逻辑、输出结果与上下游流转。</div></div>
+    </aside>
+  </div>
+  <section class="print-details" id="printDetails" aria-label="打印节点明细"></section>
+  <p class="status" id="statusNote" hidden></p>
+  <footer id="pageFooter"></footer>
+</main>
+<script id="flowchart-data" type="application/json">
+{
+  "title": "示例业务流程",
+  "subtitle": "展示跨端交接、规则判定与异常分支的离线交互式流程看板",
+  "statusNote": "当前为模板示例数据；请使用 build_flowchart.py 注入真实业务流程 JSON。",
+  "footer": "证据来源：示例模板 · 仅用于结构展示",
+  "legend": {
+    "blue": "管理配置 / 系统处理",
+    "teal": "一线执行 / 用户操作",
+    "amber": "规则判定 / 条件分流",
+    "red": "异常分支 / 失败阻断"
+  },
+  "checks": {
+    "compositeState": false,
+    "asyncExternal": false,
+    "failureBranch": true
+  },
+  "views": [
+    {
+      "id": "stage-1",
+      "title": "阶段一：申请发起与受理审核",
+      "columns": [
+        {
+          "title": "1. 提交申请",
+          "lanes": [
+            {
+              "name": "申请人端（Web / 小程序）",
+              "nodes": [
+                {
+                  "id": "S01",
+                  "title": "填写并提交业务申请",
+                  "role": "申请人",
+                  "place": "申请中心 / 新建申请页",
+                  "action": "选择业务类型、填写必要字段并点击提交。",
+                  "logic": "校验必填字段与基础格式；提交时生成业务单据并写入初始待审状态。",
+                  "result": "生成申请单（状态：待审核），页面提示已受理。",
+                  "tone": "teal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "2. 审核与分流",
+          "lanes": [
+            {
+              "name": "运营审核后台",
+              "nodes": [
+                {
+                  "id": "S02",
+                  "title": "校验准入条件并决定流向",
+                  "role": "审核专员",
+                  "place": "审核工作台 / 待办列表",
+                  "action": "打开待审单据，核验附件与资格后选择通过、退回或驳回。",
+                  "logic": "满足准入规则则进入下游执行；资料不全则退回补充；命中禁止规则则进入异常驳回。",
+                  "result": "状态更新为「已通过」「待补充」或「已驳回」，并触发通知。",
+                  "tone": "amber"
+                },
+                {
+                  "id": "S03",
+                  "title": "审核驳回与异常归档",
+                  "role": "审核专员",
+                  "place": "审核工作台 / 异常记录",
+                  "action": "记录驳回原因并关闭当前单据。",
+                  "logic": "命中不可逆驳回规则时终止当前流程，不允许直接恢复，需由申请人重新发起。",
+                  "result": "单据置为「已驳回」，申请人可在我的申请查看驳回原因。",
+                  "tone": "red"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "nextById": {
+    "S01": "提交成功后自动流转至审核专员在审核工作台执行 S02。",
+    "S02": "资料不全退回申请人返回 S01 补充重提；命中禁止规则时进入异常归档 S03。",
+    "S03": "终态分支：流程终止；如申请人整改后需再次办理，需重新回到 S01 发起新申请。"
+  }
+}
+</script>
+<script>
+(function(){
+  const raw = document.getElementById("flowchart-data").textContent;
+  const data = JSON.parse(raw);
+  const views = Array.isArray(data.views) ? data.views : [];
+  const nextById = data.nextById && typeof data.nextById === "object" ? data.nextById : {};
+  const defaultLegend = {
+    blue: "管理配置 / 系统处理",
+    teal: "一线执行 / 用户操作",
+    amber: "规则判定 / 条件分流",
+    red: "异常分支 / 失败阻断"
+  };
+  const legend = Object.assign({}, defaultLegend, data.legend || {});
+
+  const baseTitle = (data.title || "业务逻辑梳理").trim();
+  document.title = /流程图$/.test(baseTitle) ? baseTitle : baseTitle + " - 逻辑流程图";
+  document.getElementById("pageTitle").textContent = baseTitle;
+  document.getElementById("pageSub").textContent = data.subtitle || "";
+  document.getElementById("legendBlue").textContent = legend.blue;
+  document.getElementById("legendTeal").textContent = legend.teal;
+  document.getElementById("legendAmber").textContent = legend.amber;
+  document.getElementById("legendRed").textContent = legend.red;
+
+  const statusEl = document.getElementById("statusNote");
+  if (data.statusNote && String(data.statusNote).trim()) {
+    statusEl.textContent = data.statusNote;
+    statusEl.hidden = false;
+  }
+  document.getElementById("pageFooter").textContent = data.footer || "";
+
+  const nodeIndex = new Map();
+  const outgoingMap = new Map();
+  const incomingMap = new Map();
+  let totalNodes = 0;
+  let activeTone = "";
+
+  function buildGraphIndex() {
+    let seq = 0;
+    views.forEach(view => {
+      (view.columns || []).forEach(col => {
+        (col.lanes || []).forEach(lane => {
+          (lane.nodes || []).forEach(item => {
+            totalNodes += 1;
+            const nextText = nextById[item.id] || "待补充下游交接说明";
+            const haystack = [
+              item.id, item.title, item.role, item.place,
+              item.action, item.logic, item.result, nextText,
+              lane.name, col.title, view.title
+            ].filter(Boolean).join(" ").toLowerCase();
+            nodeIndex.set(item.id, { item, nextText, haystack, orderIndex: seq, button: null });
+            outgoingMap.set(item.id, []);
+            incomingMap.set(item.id, []);
+            seq += 1;
+          });
+        });
+      });
+    });
+
+    nodeIndex.forEach((entry, id) => {
+      const matches = entry.nextText.match(/[A-Za-z][A-Za-z0-9_-]*/g) || [];
+      const seen = new Set();
+      matches.forEach(token => {
+        if (token !== id && !seen.has(token) && nodeIndex.has(token)) {
+          seen.add(token);
+          outgoingMap.get(id).push(token);
+          incomingMap.get(token).push(id);
+        }
+      });
+    });
+  }
+
+  function makeNodeCard(entry) {
+    const item = entry.item;
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "node " + (item.tone || "blue");
+    b.dataset.id = item.id;
+    b.dataset.tone = item.tone || "blue";
+    b.dataset.search = entry.haystack;
+    b.setAttribute("aria-pressed", "false");
+
+    const head = document.createElement("span");
+    head.className = "node-head";
+    const idChip = document.createElement("span");
+    idChip.className = "node-id";
+    idChip.textContent = item.id;
+    head.appendChild(idChip);
+    b.appendChild(head);
+
+    const t = document.createElement("span");
+    t.className = "node-title";
+    t.textContent = item.title;
+    b.appendChild(t);
+
+    const m = document.createElement("span");
+    m.className = "node-meta";
+    m.textContent = item.role + (item.place ? " · " + item.place : "");
+    b.appendChild(m);
+
+    const targets = outgoingMap.get(item.id) || [];
+    if (targets.length > 0) {
+      const routes = document.createElement("span");
+      routes.className = "node-routes";
+      targets.slice(0, 3).forEach(targetId => {
+        const targetEntry = nodeIndex.get(targetId);
+        const isLoop = targetEntry.orderIndex < entry.orderIndex;
+        const pill = document.createElement("span");
+        pill.className = "route-pill" +
+          (targetEntry.item.tone === "red" ? " route-red" : isLoop ? " route-loop" : "");
+        pill.textContent = (isLoop ? "↺ " : "→ ") + targetId;
+        routes.appendChild(pill);
+      });
+      if (targets.length > 3) {
+        const more = document.createElement("span");
+        more.className = "route-pill";
+        more.textContent = "+" + (targets.length - 3);
+        routes.appendChild(more);
+      }
+      b.appendChild(routes);
+    }
+
+    b.addEventListener("click", () => showDetail(item, b));
+    return b;
+  }
+
+  function drawStageNav() {
+    const nav = document.getElementById("stageNav");
+    nav.replaceChildren();
+    if (views.length < 2) {
+      nav.hidden = true;
+      return;
+    }
+    nav.hidden = false;
+    views.forEach(view => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "stage-pill";
+      btn.textContent = view.title;
+      btn.addEventListener("click", () => {
+        const target = document.getElementById(view.id);
+        if (target && !target.hidden) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+      nav.appendChild(btn);
+    });
+  }
+
+  function drawViews() {
+    const container = document.getElementById("views");
+    container.replaceChildren();
+    views.forEach(view => {
+      const root = document.createElement("div");
+      root.className = "view";
+      root.id = view.id;
+
+      const heading = document.createElement("h2");
+      heading.className = "view-heading";
+      heading.textContent = view.title;
+      root.appendChild(heading);
+
+      const flow = document.createElement("div");
+      flow.className = "flow";
+
+      (view.columns || []).forEach(col => {
+        const c = document.createElement("div");
+        c.className = "column";
+
+        const h = document.createElement("div");
+        h.className = "col-title";
+        h.textContent = col.title;
+        c.appendChild(h);
+
+        (col.lanes || []).forEach(lane => {
+          const l = document.createElement("div");
+          l.className = "lane";
+
+          const ln = document.createElement("div");
+          ln.className = "lane-name";
+          ln.textContent = lane.name;
+          l.appendChild(ln);
+
+          const stack = document.createElement("div");
+          stack.className = "stack";
+
+          (lane.nodes || []).forEach(item => {
+            const entry = nodeIndex.get(item.id);
+            const btn = makeNodeCard(entry);
+            entry.button = btn;
+            stack.appendChild(btn);
+          });
+
+          l.appendChild(stack);
+          c.appendChild(l);
+        });
+
+        flow.appendChild(c);
+      });
+
+      root.appendChild(flow);
+      container.appendChild(root);
+    });
+  }
+
+  function renderPrintDetails() {
+    const printContainer = document.getElementById("printDetails");
+    printContainer.replaceChildren();
+
+    views.forEach(view => {
+      const stage = document.createElement("section");
+      stage.className = "print-stage";
+
+      const h3 = document.createElement("h3");
+      h3.textContent = view.title;
+      stage.appendChild(h3);
+
+      const table = document.createElement("table");
+      table.className = "print-table";
+
+      const thead = document.createElement("thead");
+      const headRow = document.createElement("tr");
+      ["编号", "节点名称", "角色与入口", "操作动作", "判断逻辑与规则", "输出结果与状态", "下游流转"].forEach(colName => {
+        const th = document.createElement("th");
+        th.textContent = colName;
+        headRow.appendChild(th);
+      });
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+      (view.columns || []).forEach(col => {
+        (col.lanes || []).forEach(lane => {
+          (lane.nodes || []).forEach(item => {
+            const tr = document.createElement("tr");
+            const cells = [
+              item.id,
+              item.title,
+              item.role + " / " + item.place + "（" + lane.name + "）",
+              item.action,
+              item.logic,
+              item.result,
+              nextById[item.id] || "待补充下游交接说明"
+            ];
+            cells.forEach(val => {
+              const td = document.createElement("td");
+              td.textContent = val || "";
+              tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+          });
+        });
+      });
+
+      table.appendChild(tbody);
+      stage.appendChild(table);
+      printContainer.appendChild(stage);
+    });
+  }
+
+  function selectNodeById(id) {
+    const entry = nodeIndex.get(id);
+    if (!entry || !entry.button) return;
+    if (entry.button.hidden) {
+      document.getElementById("search").value = "";
+      activeTone = "";
+      updateLegendButtons();
+      applySearch();
+    }
+    showDetail(entry.item, entry.button);
+    entry.button.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+  }
+
+  function appendJumpChips(parent, ids, isUpstream) {
+    if (!ids || ids.length === 0) return;
+    const jumpList = document.createElement("div");
+    jumpList.className = "jump-list";
+    ids.forEach(targetId => {
+      const target = nodeIndex.get(targetId).item;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "jump-btn" + (isUpstream ? " is-up" : "");
+      btn.textContent = (isUpstream ? "← 来自 " : "→ 跳转到 ") + target.id + " · " + target.title;
+      btn.addEventListener("click", () => selectNodeById(target.id));
+      jumpList.appendChild(btn);
+    });
+    parent.appendChild(jumpList);
+  }
+
+  function showDetail(item, button) {
+    document.querySelectorAll(".node[aria-pressed=true]").forEach(x => x.setAttribute("aria-pressed", "false"));
+    document.querySelectorAll(".node.is-upstream,.node.is-downstream").forEach(x => {
+      x.classList.remove("is-upstream", "is-downstream");
+    });
+
+    button.setAttribute("aria-pressed", "true");
+    const upIds = incomingMap.get(item.id) || [];
+    const downIds = outgoingMap.get(item.id) || [];
+    upIds.forEach(uid => {
+      const u = nodeIndex.get(uid);
+      if (u && u.button) u.button.classList.add("is-upstream");
+    });
+    downIds.forEach(did => {
+      const d = nodeIndex.get(did);
+      if (d && d.button) d.button.classList.add("is-downstream");
+    });
+
+    document.getElementById("dRole").textContent = item.id + " · " + item.role + (item.place ? " · " + item.place : "");
+    document.getElementById("dTitle").textContent = item.title;
+
+    const nextText = nextById[item.id] || "待补充下游交接说明";
+    const body = document.getElementById("dBody");
+    body.replaceChildren();
+
+    const sections = [
+      ["操作动作", item.action],
+      ["判断逻辑与规则", item.logic],
+      ["输出结果与状态", item.result],
+      ["下游流转与交接", nextText]
+    ];
+
+    sections.forEach(([labelText, valueText], idx) => {
+      const section = document.createElement("section");
+      section.className = "field";
+
+      const label = document.createElement("b");
+      label.textContent = labelText;
+      section.appendChild(label);
+
+      const p = document.createElement("p");
+      p.textContent = valueText || "";
+      section.appendChild(p);
+
+      if (idx === 3) appendJumpChips(section, downIds, false);
+      body.appendChild(section);
+    });
+
+    if (upIds.length > 0) {
+      const upSection = document.createElement("section");
+      upSection.className = "field";
+      const label = document.createElement("b");
+      label.textContent = "上游来源";
+      upSection.appendChild(label);
+      appendJumpChips(upSection, upIds, true);
+      body.appendChild(upSection);
+    }
+  }
+
+  function updateLegendButtons() {
+    document.querySelectorAll(".legend-btn").forEach(btn => {
+      btn.setAttribute("aria-pressed", btn.dataset.tone === activeTone ? "true" : "false");
+    });
+  }
+
+  function applySearch() {
+    const searchInput = document.getElementById("search");
+    const q = searchInput.value.trim().toLowerCase();
+
+    document.querySelectorAll(".view").forEach(view => {
+      view.querySelectorAll(".node").forEach(b => {
+        const matchText = !q || b.dataset.search.includes(q);
+        const matchTone = !activeTone || b.dataset.tone === activeTone;
+        b.hidden = !(matchText && matchTone);
+      });
+
+      view.querySelectorAll(".stack").forEach(stack => {
+        const visibleNodes = Array.from(stack.querySelectorAll(".node")).filter(n => !n.hidden);
+        visibleNodes.forEach((n, idx) => {
+          n.classList.toggle("has-prev", idx > 0);
+        });
+      });
+
+      view.querySelectorAll(".lane").forEach(l => {
+        l.hidden = !l.querySelector(".node:not([hidden])");
+      });
+
+      view.querySelectorAll(".column").forEach(c => {
+        c.hidden = !c.querySelector(".node:not([hidden])");
+      });
+
+      const visibleCols = Array.from(view.querySelectorAll(".column")).filter(c => !c.hidden);
+      visibleCols.forEach((c, idx) => {
+        c.classList.toggle("has-next-col", idx < visibleCols.length - 1);
+      });
+
+      view.hidden = visibleCols.length === 0;
+    });
+
+    const visibleCount = document.querySelectorAll(".node:not([hidden])").length;
+    document.getElementById("emptyState").hidden = visibleCount > 0;
+    document.getElementById("count").textContent = (q || activeTone)
+      ? "显示 " + visibleCount + " / " + totalNodes + " 个节点"
+      : "共 " + totalNodes + " 个节点";
+  }
+
+  buildGraphIndex();
+  drawStageNav();
+  drawViews();
+  renderPrintDetails();
+  applySearch();
+
+  const firstNode = document.querySelector(".node");
+  if (firstNode) {
+    const firstEntry = nodeIndex.get(firstNode.dataset.id);
+    if (firstEntry) showDetail(firstEntry.item, firstEntry.button);
+  }
+
+  document.querySelectorAll(".legend-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      activeTone = activeTone === btn.dataset.tone ? "" : btn.dataset.tone;
+      updateLegendButtons();
+      applySearch();
+    });
+  });
+
+  const searchEl = document.getElementById("search");
+  searchEl.addEventListener("input", applySearch);
+  searchEl.addEventListener("keydown", e => {
+    if (e.key === "Escape" && (searchEl.value || activeTone)) {
+      searchEl.value = "";
+      activeTone = "";
+      updateLegendButtons();
+      applySearch();
+    }
+  });
+  document.getElementById("printBtn").addEventListener("click", () => window.print());
+})();
+</script>
+</body>
+</html>

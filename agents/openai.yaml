@@ -1,0 +1,4 @@
+interface:
+  display_name: "Business Logic Review"
+  short_description: "Review workflows and produce Chinese business documentation and offline flowcharts"
+  default_prompt: "Use $business-logic-review to verify this workflow against the UI, implementation, and approved rules, and produce the Simplified Chinese business document and interactive flowchart when in scope (or answer directly in chat for narrow investigations)."
